@@ -8,14 +8,9 @@
   "description": "Multi-dimensional AI business architect.",
   "icons": [
     {
-      "src": "https://picsum.photos/192/192?seed=tesseract",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://picsum.photos/512/512?seed=tesseract",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ]
 }

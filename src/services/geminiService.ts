@@ -198,3 +198,65 @@ export async function generateBusinessPlan(idea: string, country: string, curren
   }
   return JSON.parse('{"suggestedNames": [], "summary": "", "brandingStartupAdvice": "", "steps": [], "problemsAndSolutions": [], "industryReferences": [], "governmentHelp": []}');
 }
+
+export interface ScriptGenerationParams {
+  industry: string;
+  target: string;
+  goal: string;
+  type: string;
+  tone: string;
+  length: string;
+  objectionLevel: string;
+  researchMode: boolean;
+}
+
+export async function generateSalesScript(params: ScriptGenerationParams): Promise<string> {
+  const { industry, target, goal, type, tone, length, objectionLevel, researchMode } = params;
+
+  const prompt = `You are an elite sales psychologist and master of persuasion. 
+  Generate a hyper-persuasive ${type} script for the following context:
+  - Industry: ${industry}
+  - Target Audience: ${target}
+  - Primary Goal: ${goal}
+  - Tone: ${tone}
+  - Length: ${length}
+  - Objection Handling Level: ${objectionLevel}
+
+  ${researchMode ? "CRITICAL: Use your research tools to incorporate current 2026 trends, competitor strategies, and industry-specific data into this script." : ""}
+
+  The script MUST follow this structure:
+  1. Introduction & Hook (Use a Pattern Interrupt)
+  2. Value Proposition (The "Why Now")
+  3. Objection Handling (Specific "If they say X, say Y" scenarios based on the ${objectionLevel} level)
+  4. Call to Action (Low-friction next steps)
+
+  Use advanced sales psychology techniques like Labeling ("It seems like..."), Calibrated Questions ("How would it affect..."), and Pattern Interrupts.
+
+  Format the entire response in professional Markdown.`;
+
+  const ai = getAI();
+  let attempts = 0;
+  const maxAttempts = 3;
+
+  while (attempts < maxAttempts) {
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          tools: researchMode ? [{ googleSearch: {} }] : undefined,
+        },
+      });
+      return response.text || "Failed to generate script.";
+    } catch (error: any) {
+      attempts++;
+      const isRetryable = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("UNAVAILABLE");
+      if (isRetryable && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+        continue;
+      }
+      throw error;
+    }
+  }
+  return "Failed to generate script after multiple attempts.";
+}

@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { generateBusinessPlan, BusinessPlan } from '../services/geminiService';
 import { COUNTRY_CURRENCY_MAP, CURRENCY_SYMBOLS, SUPPORTED_LANGUAGES } from '../constants';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Loader2, MapPin, Coins, Briefcase, Globe, Landmark, Server, ArrowRight, Sparkles } from 'lucide-react';
+import { Search, Loader2, MapPin, Coins, Briefcase, Globe, Landmark, Server, ArrowRight, Sparkles, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import AdSensePlaceholder from '../components/AdSensePlaceholder';
 import NeuronBackground from '../components/NeuronBackground';
 import Logo from '../components/Logo';
 import { SEO } from '../components/SEO';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function Home() {
   const [idea, setIdea] = useState('');
@@ -122,9 +122,9 @@ export default function Home() {
         canonical={plans ? `https://ais-pre-qwdzgtvcxwikuaul7m6xio-226285742400.asia-southeast1.run.app/?idea=${encodeURIComponent(idea)}` : 'https://ais-pre-qwdzgtvcxwikuaul7m6xio-226285742400.asia-southeast1.run.app/'}
       />
       {/* Abstract Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-slate-100">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-cyan-400/60 rounded-full blur-[120px] animate-move-blue"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-yellow-400/60 rounded-full blur-[120px] animate-move-yellow"></div>
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-slate-950">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-cyan-600/40 rounded-full blur-[120px] animate-move-blue"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-900/40 rounded-full blur-[120px] animate-move-yellow"></div>
         <NeuronBackground />
       </div>
 
@@ -137,85 +137,100 @@ export default function Home() {
         >
           {/* Logo */}
           <div className="shrink-0 flex items-center justify-center">
-            <Logo className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 drop-shadow-[0_0_20px_rgba(0,255,255,0.2)] group-hover:scale-105 transition-transform" />
+            <Logo className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 drop-shadow-[0_0_30px_rgba(0,255,255,0.3)] group-hover:scale-105 transition-transform" />
           </div>
           
           {/* Text Group */}
           <div className="flex flex-col items-center text-center">
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-light tracking-tighter text-gray-900 drop-shadow-[0_0_15px_rgba(0,255,255,0.2)] leading-none mb-4">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-bold tracking-tighter text-white drop-shadow-[0_0_20px_rgba(0,255,255,0.4)] leading-none mb-4">
               IdeaTesseract
             </h1>
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-cyan-700/80 tracking-[0.2em] uppercase font-light">
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-cyan-400 tracking-[0.2em] uppercase font-bold">
               Multi-Dimensional Business Architect
             </p>
           </div>
         </button>
+
+        <div className="mt-8 flex justify-center">
+          <button 
+            onClick={() => navigate('/script-generator')}
+            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-medium transition-all shadow-lg hover:shadow-blue-500/25 group"
+          >
+            <Zap size={18} className="group-hover:animate-pulse" />
+            Try Script Generator
+          </button>
+        </div>
       </header>
 
       <main className="w-full">
-        <section className="max-w-4xl mx-auto bg-white shadow-[0_30px_80px_rgba(0,0,0,0.15)] p-8 rounded-3xl border border-slate-400 mb-16 relative z-10" aria-label="Business Idea Search">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="md:col-span-1 relative">
-              <Search className="absolute left-4 top-4 text-gray-400" size={20} aria-hidden="true" />
-              <input
-                type="text"
-                value={idea}
-                onChange={(e) => setIdea(e.target.value)}
-                placeholder="Enter your business idea..."
-                aria-label="Enter your business idea"
-                className="w-full p-4 pl-12 border border-slate-300 rounded-full bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              />
-            </div>
-            <div className="flex gap-2 md:col-span-2">
-              <div className="relative flex-1">
-                <MapPin className="absolute left-4 top-4 text-gray-500" size={20} aria-hidden="true" />
-                <select
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  aria-label="Select target country"
-                  className="w-full p-4 pl-12 border border-slate-300 rounded-full bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 appearance-none"
-                >
-                  {Object.keys(COUNTRY_CURRENCY_MAP).map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="relative flex-1">
-                <Globe className="absolute left-4 top-4 text-gray-500" size={20} aria-hidden="true" />
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  aria-label="Select language"
-                  className="w-full p-4 pl-12 border border-slate-300 rounded-full bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 appearance-none"
-                >
-                  {Object.entries(SUPPORTED_LANGUAGES).map(([key, value]) => (
-                    <option key={key} value={key}>{value}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="relative flex-1">
-                <Coins className="absolute left-4 top-4 text-gray-500" size={20} aria-hidden="true" />
+        <section className="max-w-5xl mx-auto mb-16 relative z-10 px-4" aria-label="Business Idea Search">
+          <div className="bg-slate-900/60 backdrop-blur-3xl p-8 md:p-12 rounded-[2.5rem] border border-white/20 shadow-2xl relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+            <div className="relative z-10 flex flex-col gap-6">
+              <div className="relative">
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-cyan-400/50" size={24} aria-hidden="true" />
                 <input
                   type="text"
-                  value={currencySymbol}
-                  readOnly
-                  aria-label="Currency symbol"
-                  className="w-full p-4 pl-12 border border-slate-300 rounded-full bg-slate-50 text-gray-700 cursor-not-allowed"
+                  value={idea}
+                  onChange={(e) => setIdea(e.target.value)}
+                  placeholder="Describe your business idea in detail..."
+                  aria-label="Enter your business idea"
+                  className="w-full p-6 pl-16 border border-white/20 rounded-3xl bg-slate-800/80 backdrop-blur-md text-xl text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 transition-all shadow-inner"
                 />
               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="relative">
+                  <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-cyan-400/50" size={20} aria-hidden="true" />
+                  <select
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    aria-label="Select target country"
+                    className="w-full p-4 pl-14 border border-white/20 rounded-2xl bg-slate-800/80 backdrop-blur-md text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/40 transition-all appearance-none cursor-pointer shadow-inner"
+                  >
+                    {Object.keys(COUNTRY_CURRENCY_MAP).map(c => (
+                      <option key={c} value={c} className="bg-slate-900">{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <Globe className="absolute left-5 top-1/2 -translate-y-1/2 text-cyan-400/50" size={20} aria-hidden="true" />
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    aria-label="Select language"
+                    className="w-full p-4 pl-14 border border-white/20 rounded-2xl bg-slate-800/80 backdrop-blur-md text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/40 transition-all appearance-none cursor-pointer shadow-inner"
+                  >
+                    {Object.entries(SUPPORTED_LANGUAGES).map(([key, value]) => (
+                      <option key={key} value={key} className="bg-slate-900">{value}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <Coins className="absolute left-5 top-1/2 -translate-y-1/2 text-cyan-400/50" size={20} aria-hidden="true" />
+                  <input
+                    type="text"
+                    value={currencySymbol}
+                    readOnly
+                    aria-label="Currency symbol"
+                    className="w-full p-4 pl-14 border border-white/20 rounded-2xl bg-slate-800/80 backdrop-blur-md text-slate-300 cursor-not-allowed shadow-inner"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleSearch}
+                disabled={loading}
+                aria-label="Generate Business Plan"
+                className="w-full p-6 bg-cyan-600 text-white rounded-3xl flex items-center justify-center gap-3 hover:bg-cyan-500 transition-all transform hover:scale-[1.01] shadow-[0_0_30px_rgba(6,182,212,0.4)] disabled:bg-slate-800 disabled:text-slate-600"
+              >
+                <div aria-live="polite" className="flex items-center gap-3 text-lg font-black uppercase tracking-widest">
+                  {loading ? <Loader2 className="animate-spin" size={24} aria-hidden="true" /> : <Sparkles size={24} aria-hidden="true" />}
+                  {loading ? 'Architecting Your Vision...' : 'Generate Multi-Dimensional Plan'}
+                </div>
+              </button>
             </div>
-            <button
-              onClick={handleSearch}
-              disabled={loading}
-              aria-label="Generate Business Plan"
-              className="p-4 bg-cyan-700 text-white rounded-full flex items-center justify-center gap-2 hover:bg-cyan-600 transition-colors"
-            >
-            <div aria-live="polite" className="flex items-center gap-2">
-              {loading ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Search size={20} aria-hidden="true" />}
-              {loading ? 'Generating Plan...' : 'Generate Plan'}
-            </div>
-          </button>
-        </div>
+          </div>
         {error && (
           <div className="mt-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-center">
             <p className="font-medium">Error</p>
@@ -227,26 +242,35 @@ export default function Home() {
 
       {!plans && !loading && (
         <section className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 relative z-10 px-4">
-          <div className="bg-white/60 backdrop-blur-md p-8 rounded-3xl border border-slate-200 text-center">
-            <div className="w-12 h-12 bg-cyan-100 text-cyan-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sparkles size={24} />
+          <div className="bg-slate-900/60 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 text-center shadow-2xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-slate-800/80 backdrop-blur-md text-cyan-400 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/20 shadow-lg group-hover:scale-110 transition-transform">
+                <Sparkles size={28} />
+              </div>
+              <h2 className="text-xl font-serif mb-3 text-white font-bold">AI-Powered Architecture</h2>
+              <p className="text-slate-300 text-sm leading-relaxed font-medium">Generate multi-dimensional business structures using advanced generative AI models.</p>
             </div>
-            <h2 className="text-xl font-serif mb-2">AI-Powered Architecture</h2>
-            <p className="text-gray-600 text-sm">Generate multi-dimensional business structures using advanced generative AI models.</p>
           </div>
-          <div className="bg-white/60 backdrop-blur-md p-8 rounded-3xl border border-slate-200 text-center">
-            <div className="w-12 h-12 bg-yellow-100 text-yellow-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Globe size={24} />
+          <div className="bg-slate-900/60 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 text-center shadow-2xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-slate-800/80 backdrop-blur-md text-yellow-500 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/20 shadow-lg group-hover:scale-110 transition-transform">
+                <Globe size={28} />
+              </div>
+              <h2 className="text-xl font-serif mb-3 text-white font-bold">Global Market Context</h2>
+              <p className="text-slate-300 text-sm leading-relaxed font-medium">Localized strategies with country-specific currency and market insights for 20+ regions.</p>
             </div>
-            <h2 className="text-xl font-serif mb-2">Global Market Context</h2>
-            <p className="text-gray-600 text-sm">Localized strategies with country-specific currency and market insights for 20+ regions.</p>
           </div>
-          <div className="bg-white/60 backdrop-blur-md p-8 rounded-3xl border border-slate-200 text-center">
-            <div className="w-12 h-12 bg-cyan-100 text-cyan-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ArrowRight size={24} />
+          <div className="bg-slate-900/60 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 text-center shadow-2xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-slate-800/80 backdrop-blur-md text-cyan-400 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/20 shadow-lg group-hover:scale-110 transition-transform">
+                <ArrowRight size={28} />
+              </div>
+              <h2 className="text-xl font-serif mb-3 text-white font-bold">Step-by-Step Execution</h2>
+              <p className="text-slate-300 text-sm leading-relaxed font-medium">From branding to government support, get a clear roadmap to launch your business idea.</p>
             </div>
-            <h2 className="text-xl font-serif mb-2">Step-by-Step Execution</h2>
-            <p className="text-gray-600 text-sm">From branding to government support, get a clear roadmap to launch your business idea.</p>
           </div>
         </section>
       )}
@@ -260,39 +284,43 @@ export default function Home() {
             exit={{ opacity: 0, y: -40 }}
             className="max-w-5xl mx-auto relative z-10"
           >
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6 p-6 bg-slate-900/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/20 shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
               <button
                 onClick={() => {
                   const currentIndex = plans.suggestedNames.indexOf(selectedName);
                   const prevIndex = (currentIndex - 1 + plans.suggestedNames.length) % plans.suggestedNames.length;
                   setSelectedName(plans.suggestedNames[prevIndex]);
                 }}
-                className="p-4 bg-gray-100 text-gray-900 rounded-full hover:bg-gray-200 w-full md:w-auto"
+                className="relative z-10 p-4 bg-slate-800/80 backdrop-blur-md text-white rounded-full hover:bg-slate-700 transition-all border border-white/20 shadow-lg w-full md:w-auto font-bold flex items-center justify-center gap-2"
               >
-                Previous Name
+                <ChevronLeft size={20} /> Previous Name
               </button>
-              <h2 className="text-2xl md:text-3xl font-serif text-gray-900 text-center">Name: {selectedName}</h2>
+              <h2 className="relative z-10 text-2xl md:text-3xl font-serif text-white text-center font-bold">Name: {selectedName}</h2>
               <button
                 onClick={() => {
                   const currentIndex = plans.suggestedNames.indexOf(selectedName);
                   const nextIndex = (currentIndex + 1) % plans.suggestedNames.length;
                   setSelectedName(plans.suggestedNames[nextIndex]);
                 }}
-                className="p-4 bg-gray-100 text-gray-900 rounded-full hover:bg-gray-200 w-full md:w-auto"
+                className="relative z-10 p-4 bg-slate-800/80 backdrop-blur-md text-white rounded-full hover:bg-slate-700 transition-all border border-white/20 shadow-lg w-full md:w-auto font-bold flex items-center justify-center gap-2"
               >
-                Next Name
+                Next Name <ChevronRight size={20} />
               </button>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-lg p-8 rounded-3xl border border-cyan-300 shadow-[0_0_30px_rgba(0,255,255,0.1)] mb-12 text-center">
-              <h3 className="text-xl font-serif text-cyan-700 mb-6">Launch {selectedName}</h3>
-              <div className="flex flex-wrap justify-center gap-4">
-                <a href={`https://www.google.com/search?q=buy+domain+${encodeURIComponent(selectedName)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-6 py-3 bg-cyan-700 text-white rounded-full hover:bg-cyan-600 transition-colors">
-                  <Globe size={18} /> Domain
-                </a>
-                <a href={`https://www.google.com/search?q=best+web+hosting+for+${encodeURIComponent(selectedName)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-900 rounded-full hover:bg-gray-200 transition-colors">
-                  <Server size={18} /> Hosting
-                </a>
+            <div className="bg-slate-900/60 backdrop-blur-3xl p-10 rounded-[3rem] border border-white/20 shadow-2xl mb-16 text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+              <div className="relative z-10">
+                <h3 className="text-2xl font-serif text-cyan-400 mb-8 font-bold">Launch {selectedName}</h3>
+                <div className="flex flex-wrap justify-center gap-6">
+                  <a href={`https://www.google.com/search?q=buy+domain+${encodeURIComponent(selectedName)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-8 py-4 bg-cyan-600 text-white rounded-full hover:bg-cyan-500 transition-all transform hover:scale-105 shadow-xl font-bold">
+                    <Globe size={20} /> Domain Search
+                  </a>
+                  <a href={`https://www.google.com/search?q=best+web+hosting+for+${encodeURIComponent(selectedName)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-8 py-4 bg-slate-800/80 backdrop-blur-md text-white border border-white/20 rounded-full hover:bg-slate-700 transition-all transform hover:scale-105 shadow-md font-bold">
+                    <Server size={20} /> Hosting Check
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -300,24 +328,32 @@ export default function Home() {
               type="text"
               value={selectedName}
               onChange={(e) => setSelectedName(e.target.value)}
-              className="text-4xl md:text-6xl font-serif font-light mb-4 text-center w-full bg-transparent text-gray-900 border-b border-transparent hover:border-gray-900 focus:border-gray-900 focus:outline-none break-words"
+              className="text-4xl md:text-6xl font-serif font-bold mb-4 text-center w-full bg-transparent text-white border-b border-transparent hover:border-white/20 focus:border-white/20 focus:outline-none break-words"
             />
-            <h3 className="text-xl md:text-2xl font-serif font-light mb-8 text-center text-gray-500">Your Strategic Roadmap</h3>
-            <textarea
-              value={plans.summary}
-              onChange={(e) => setPlans({ ...plans, summary: e.target.value })}
-              className="block text-base md:text-lg text-gray-600 mb-12 text-center max-w-2xl mx-auto w-full bg-transparent border-b border-transparent hover:border-gray-400 focus:border-gray-400 focus:outline-none"
-              rows={4}
-            />
+            <div className="bg-slate-900/60 backdrop-blur-3xl p-6 md:p-8 rounded-3xl border border-white/20 shadow-2xl mb-12 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+              <div className="relative z-10">
+                <h3 className="text-xl md:text-2xl font-serif font-bold mb-6 text-center text-white">Your Strategic Roadmap</h3>
+                <textarea
+                  value={plans.summary}
+                  onChange={(e) => setPlans({ ...plans, summary: e.target.value })}
+                  className="block text-base md:text-lg text-slate-200 text-center max-w-2xl mx-auto w-full bg-transparent border-b border-transparent hover:border-white/20 focus:border-white/20 focus:outline-none font-medium"
+                  rows={4}
+                />
+              </div>
+            </div>
             
-            <div className="bg-white/80 backdrop-blur-lg p-6 md:p-8 rounded-3xl border border-gray-200 shadow-[0_0_30px_rgba(0,0,0,0.05)] mb-12">
-              <h4 className="text-xl md:text-2xl font-serif mb-4 text-gray-900 text-center">Branding & Startup Advice</h4>
-              <textarea
-                value={plans.brandingStartupAdvice}
-                onChange={(e) => setPlans({ ...plans, brandingStartupAdvice: e.target.value })}
-                className="text-gray-600 leading-relaxed w-full bg-transparent border-b border-transparent hover:border-gray-400 focus:border-gray-400 focus:outline-none text-center"
-                rows={6}
-              />
+            <div className="bg-slate-900/60 backdrop-blur-3xl p-6 md:p-8 rounded-3xl border border-white/20 shadow-2xl mb-12 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+              <div className="relative z-10">
+                <h4 className="text-xl md:text-2xl font-serif mb-4 text-white text-center font-bold">Branding & Startup Advice</h4>
+                <textarea
+                  value={plans.brandingStartupAdvice}
+                  onChange={(e) => setPlans({ ...plans, brandingStartupAdvice: e.target.value })}
+                  className="text-slate-200 leading-relaxed w-full bg-transparent border-b border-transparent hover:border-white/20 focus:border-white/20 focus:outline-none text-center font-medium"
+                  rows={6}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-12">
@@ -325,141 +361,187 @@ export default function Home() {
                 const IconComponent = (Icons as any)[step.icon] || Briefcase;
                 return (
                   <div key={index} className="animate-float-card" style={{ animationDelay: `${index * 0.2}s` }}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 50, rotateX: -10 }}
-                      animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                      whileHover={{ scale: 1.02, rotateY: 2, z: 10 }}
-                      transition={{ delay: index * 0.05, type: "spring", stiffness: 100 }}
-                      className="bg-white p-6 md:p-8 rounded-3xl border border-slate-400 shadow-[0_15px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_30px_90px_rgba(0,0,0,0.2)] transition-all duration-300 flex flex-col h-full cursor-pointer group"
-                      onClick={() => handleStepClick(index)}
-                    >
-                      <div className="relative w-full h-40 md:h-48 mb-6 rounded-2xl overflow-hidden">
-                        <img
-                          src={`https://picsum.photos/seed/${encodeURIComponent(step.imageKeyword)}/600/400`}
-                          alt={step.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors duration-300"></div>
-                      </div>
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center border border-yellow-500 shrink-0 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
-                          <IconComponent className="text-cyan-700" size={20} />
+                      <motion.div
+                        initial={{ opacity: 0, y: 50, rotateX: -10 }}
+                        animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                        whileHover={{ scale: 1.02, rotateY: 2, z: 10 }}
+                        transition={{ delay: index * 0.05, type: "spring", stiffness: 100 }}
+                        className="bg-slate-900/60 backdrop-blur-3xl p-6 md:p-8 rounded-3xl border border-white/20 shadow-2xl hover:shadow-cyan-500/20 transition-all duration-300 flex flex-col h-full cursor-pointer group relative overflow-hidden"
+                        onClick={() => handleStepClick(index)}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="relative w-full h-40 md:h-48 mb-6 rounded-2xl overflow-hidden shadow-inner border border-white/10">
+                            <img
+                              src={`https://picsum.photos/seed/${encodeURIComponent(step.imageKeyword)}/600/400`}
+                              alt={step.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300"></div>
+                          </div>
+                          <div className="flex items-center gap-4 mb-6">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-800/80 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shrink-0 shadow-lg">
+                              <IconComponent className="text-cyan-400" size={20} />
+                            </div>
+                            <input
+                              type="text"
+                              value={step.title}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                const newSteps = [...plans.steps];
+                                newSteps[index].title = e.target.value;
+                                setPlans({ ...plans, steps: newSteps });
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xl md:text-2xl font-serif text-white bg-transparent border-b border-transparent hover:border-white/20 focus:border-white/20 focus:outline-none w-full text-center truncate font-bold"
+                            />
+                          </div>
+                          <textarea
+                            value={step.description}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              const newSteps = [...plans.steps];
+                              newSteps[index].description = e.target.value;
+                              setPlans({ ...plans, steps: newSteps });
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-slate-300 leading-relaxed w-full bg-transparent border-b border-transparent hover:border-white/20 focus:border-white/20 focus:outline-none text-center resize-none flex-grow max-h-32 overflow-y-auto font-medium"
+                            rows={4}
+                          />
+                          
+                          <div className="mt-6 flex justify-center">
+                            <button className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors font-bold">
+                              Get More Specific Info <ArrowRight size={16} />
+                            </button>
+                          </div>
                         </div>
-                        <input
-                          type="text"
-                          value={step.title}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            const newSteps = [...plans.steps];
-                            newSteps[index].title = e.target.value;
-                            setPlans({ ...plans, steps: newSteps });
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-xl md:text-2xl font-serif text-gray-900 bg-transparent border-b border-transparent hover:border-gray-900 focus:border-gray-900 focus:outline-none w-full text-center truncate"
-                        />
-                      </div>
-                      <textarea
-                        value={step.description}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          const newSteps = [...plans.steps];
-                          newSteps[index].description = e.target.value;
-                          setPlans({ ...plans, steps: newSteps });
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-gray-600 leading-relaxed w-full bg-transparent border-b border-transparent hover:border-gray-400 focus:border-gray-400 focus:outline-none text-center resize-none flex-grow max-h-32 overflow-y-auto"
-                        rows={4}
-                      />
-                      
-                      <div className="mt-6 flex justify-center">
-                        <button className="flex items-center gap-2 text-cyan-700 hover:text-cyan-600 transition-colors font-medium">
-                          Get More Specific Info <ArrowRight size={16} />
-                        </button>
-                      </div>
-                    </motion.div>
+                      </motion.div>
                   </div>
                 );
               })}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-              <div className="bg-white/80 backdrop-blur-lg p-6 md:p-8 rounded-3xl border border-gray-200 shadow-[0_0_30px_rgba(0,0,0,0.05)]">
-                <h4 className="text-xl md:text-2xl font-serif mb-6 text-gray-900 text-center flex items-center justify-center gap-2"><Globe className="text-cyan-700" /> Industry References</h4>
-                <ul className="space-y-2 text-gray-600">
-                  {plans.industryReferences.map((ref, index) => <li key={index} className="text-center">{ref}</li>)}
-                </ul>
+              <div className="bg-slate-900/60 backdrop-blur-3xl p-6 md:p-8 rounded-3xl border border-white/20 shadow-2xl relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+                <div className="relative z-10">
+                  <h4 className="text-xl md:text-2xl font-serif mb-6 text-white text-center flex items-center justify-center gap-2 font-bold"><Globe className="text-cyan-400" /> Industry References</h4>
+                  <ul className="space-y-2 text-slate-300 font-medium">
+                    {plans.industryReferences.map((ref, index) => <li key={index} className="text-center">{ref}</li>)}
+                  </ul>
+                </div>
               </div>
-              <div className="bg-white/80 backdrop-blur-lg p-6 md:p-8 rounded-3xl border border-gray-200 shadow-[0_0_30px_rgba(0,0,0,0.05)]">
-                <h4 className="text-xl md:text-2xl font-serif mb-6 text-gray-900 text-center flex items-center justify-center gap-2"><Landmark className="text-cyan-700" /> Government Support</h4>
-                <ul className="space-y-2 text-gray-600">
-                  {plans.governmentHelp.map((help, index) => <li key={index} className="text-center">{help}</li>)}
-                </ul>
+              <div className="bg-slate-900/60 backdrop-blur-3xl p-6 md:p-8 rounded-3xl border border-white/20 shadow-2xl relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+                <div className="relative z-10">
+                  <h4 className="text-xl md:text-2xl font-serif mb-6 text-white text-center flex items-center justify-center gap-2 font-bold"><Landmark className="text-cyan-400" /> Government Support</h4>
+                  <ul className="space-y-2 text-slate-300 font-medium">
+                    {plans.governmentHelp.map((help, index) => <li key={index} className="text-center">{help}</li>)}
+                  </ul>
+                </div>
               </div>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-lg p-6 md:p-8 rounded-3xl border border-gray-200 shadow-[0_0_30px_rgba(0,0,0,0.05)]">
-              <h4 className="text-xl md:text-2xl font-serif mb-6 text-gray-900 text-center">Potential Problems & Solutions</h4>
-              <div className="space-y-6">
-                {plans.problemsAndSolutions.map((item, index) => (
-                  <div key={index} className="border-b border-gray-200 pb-4 last:border-0 last:pb-0">
-                    <input
-                      type="text"
-                      value={item.problem}
-                      onChange={(e) => {
-                        const newProblems = [...plans.problemsAndSolutions];
-                        newProblems[index].problem = e.target.value;
-                        setPlans({ ...plans, problemsAndSolutions: newProblems });
-                      }}
-                      className="font-semibold text-gray-900 mb-1 w-full bg-transparent border-b border-transparent hover:border-gray-900 focus:border-gray-900 focus:outline-none text-center"
-                    />
-                    <textarea
-                      value={item.solution}
-                      onChange={(e) => {
-                        const newProblems = [...plans.problemsAndSolutions];
-                        newProblems[index].solution = e.target.value;
-                        setPlans({ ...plans, problemsAndSolutions: newProblems });
-                      }}
-                      className="text-gray-600 w-full bg-transparent border-b border-transparent hover:border-gray-400 focus:border-gray-400 focus:outline-none text-center resize-none"
-                      rows={2}
-                    />
-                  </div>
-                ))}
+            <div className="bg-slate-900/60 backdrop-blur-3xl p-6 md:p-8 rounded-3xl border border-white/20 shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+              <div className="relative z-10">
+                <h4 className="text-xl md:text-2xl font-serif mb-6 text-white text-center font-bold">Potential Problems & Solutions</h4>
+                <div className="space-y-6">
+                  {plans.problemsAndSolutions.map((item, index) => (
+                    <div key={index} className="border-b border-white/10 pb-4 last:border-0 last:pb-0">
+                      <input
+                        type="text"
+                        value={item.problem}
+                        onChange={(e) => {
+                          const newProblems = [...plans.problemsAndSolutions];
+                          newProblems[index].problem = e.target.value;
+                          setPlans({ ...plans, problemsAndSolutions: newProblems });
+                        }}
+                        className="font-bold text-white mb-1 w-full bg-transparent border-b border-transparent hover:border-white/20 focus:border-white/20 focus:outline-none text-center"
+                      />
+                      <textarea
+                        value={item.solution}
+                        onChange={(e) => {
+                          const newProblems = [...plans.problemsAndSolutions];
+                          newProblems[index].solution = e.target.value;
+                          setPlans({ ...plans, problemsAndSolutions: newProblems });
+                        }}
+                        className="text-slate-300 w-full bg-transparent border-b border-transparent hover:border-white/20 focus:border-white/20 focus:outline-none text-center resize-none font-medium"
+                        rows={2}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </motion.article>
         )}
       </AnimatePresence>
       </main>
-      <footer className="mt-16 relative z-10 w-full border-t border-slate-200 pt-12 pb-8">
-        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-          <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <Logo className="w-8 h-8" />
-              <span className="text-xl font-serif font-light tracking-tight">IdeaTesseract</span>
+      <footer className="mt-16 relative z-10 w-full border-t border-white/10 pt-16 pb-8 bg-slate-950/90 backdrop-blur-2xl rounded-t-[4rem] px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-16">
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+                <Logo className="w-8 h-8" />
+              </div>
+              <span className="text-2xl font-serif font-bold tracking-tight text-white">IdeaTesseract</span>
             </div>
-            <p className="text-gray-500 text-sm max-w-md">
+            <p className="text-slate-400 text-base max-w-md font-medium leading-relaxed mb-8">
               The world's most advanced AI business architect. We help entrepreneurs transform abstract ideas into multi-dimensional, actionable business structures and strategic roadmaps.
             </p>
+            <div className="flex items-center gap-4">
+              <a href="#" className="p-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-all text-slate-400 hover:text-cyan-400">
+                <Icons.Twitter size={20} />
+              </a>
+              <a href="#" className="p-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-all text-slate-400 hover:text-cyan-400">
+                <Icons.Github size={20} />
+              </a>
+              <a href="#" className="p-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-all text-slate-400 hover:text-cyan-400">
+                <Icons.Linkedin size={20} />
+              </a>
+            </div>
           </div>
+          
           <div>
-            <h4 className="font-semibold mb-4 text-gray-900">Resources</h4>
-            <ul className="space-y-2 text-sm text-gray-500">
-              <li><a href="/" className="hover:text-cyan-700 transition-colors">Business Plan Generator</a></li>
-              <li><a href="/" className="hover:text-cyan-700 transition-colors">Startup Architect</a></li>
-              <li><a href="/" className="hover:text-cyan-700 transition-colors">Strategy Roadmap</a></li>
+            <h4 className="font-bold mb-6 text-white text-lg">AI Tools</h4>
+            <ul className="space-y-4 text-sm text-slate-400 font-medium">
+              <li><Link to="/" className="hover:text-cyan-400 transition-colors flex items-center gap-2"><Icons.LayoutDashboard size={14} /> Business Plan Gen</Link></li>
+              <li><Link to="/script-generator" className="hover:text-cyan-400 transition-colors flex items-center gap-2"><Icons.MessageSquare size={14} /> Sales Script Gen</Link></li>
+              <li><Link to="/" className="hover:text-cyan-400 transition-colors flex items-center gap-2"><Icons.Compass size={14} /> Startup Architect</Link></li>
+              <li><Link to="/" className="hover:text-cyan-400 transition-colors flex items-center gap-2"><Icons.Map size={14} /> Strategy Roadmap</Link></li>
             </ul>
           </div>
+
           <div>
-            <h4 className="font-semibold mb-4 text-gray-900">Legal</h4>
-            <ul className="space-y-2 text-sm text-gray-500">
-              <li><a href="/" className="hover:text-cyan-700 transition-colors">Privacy Policy</a></li>
-              <li><a href="/" className="hover:text-cyan-700 transition-colors">Terms of Service</a></li>
+            <h4 className="font-bold mb-6 text-white text-lg">Resources</h4>
+            <ul className="space-y-4 text-sm text-slate-400 font-medium">
+              <li><a href="#" className="hover:text-cyan-400 transition-colors">Documentation</a></li>
+              <li><a href="#" className="hover:text-cyan-400 transition-colors">Market Analysis</a></li>
+              <li><a href="#" className="hover:text-cyan-400 transition-colors">Success Stories</a></li>
+              <li><a href="#" className="hover:text-cyan-400 transition-colors">API Access</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-bold mb-6 text-white text-lg">Legal</h4>
+            <ul className="space-y-4 text-sm text-slate-400 font-medium">
+              <li><a href="#" className="hover:text-cyan-400 transition-colors">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-cyan-400 transition-colors">Terms of Service</a></li>
+              <li><a href="#" className="hover:text-cyan-400 transition-colors">Cookie Policy</a></li>
             </ul>
           </div>
         </div>
-        <div className="text-center text-gray-400 text-xs">
-          <p>© {new Date().getFullYear()} IdeaTesseract. All rights reserved. Powered by advanced Generative AI.</p>
+        
+        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-slate-500 text-xs font-bold">
+            © {new Date().getFullYear()} IdeaTesseract. All rights reserved. Powered by advanced Generative AI.
+          </p>
+          <div className="flex items-center gap-6 text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+            <span>Status: Operational</span>
+            <span>Region: Global</span>
+          </div>
         </div>
         <AdSensePlaceholder adId={ads.footerId} className="mt-8" />
       </footer>

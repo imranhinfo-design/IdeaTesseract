@@ -89,6 +89,8 @@ export default function Home() {
         message = `Your Google Gemini API key is invalid. Google rejected the key: ${maskedKey}. Please double-check your Vercel Environment Variables and REDEPLOY.`;
       } else if (message.includes("503") || message.includes("high demand") || message.includes("UNAVAILABLE")) {
         message = "Google's AI servers are currently experiencing very high demand. I've tried retrying, but they are still busy. Please wait 1-2 minutes and try again.";
+      } else if (message.includes("RATE_LIMIT_EXCEEDED")) {
+        message = "You've reached the Gemini API free tier limit (20 requests per day). Please wait a few minutes or try again later today. This is a limit imposed by Google on their free AI model.";
       }
       
       setError(message);

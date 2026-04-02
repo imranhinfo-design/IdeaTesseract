@@ -96,6 +96,12 @@ export async function generateStepDeepDive(idea: string, country: string, stepTi
       } catch (error: any) {
         attempts++;
         const isRetryable = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("UNAVAILABLE");
+        const isRateLimit = error.message?.includes("429") || error.message?.includes("Quota exceeded") || error.message?.includes("RESOURCE_EXHAUSTED");
+        
+        if (isRateLimit) {
+          throw new Error("RATE_LIMIT_EXCEEDED: You've reached the Gemini API free tier limit (20 requests per day). Please wait a few minutes or try again later today.");
+        }
+        
         if (isRetryable && attempts < maxAttempts) {
           console.warn(`Gemini API high demand (503). Retrying attempt ${attempts}...`);
           await new Promise(resolve => setTimeout(resolve, 2000 * attempts)); // Exponential backoff
@@ -188,6 +194,12 @@ export async function generateBusinessPlan(idea: string, country: string, curren
     } catch (error: any) {
       attempts++;
       const isRetryable = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("UNAVAILABLE");
+      const isRateLimit = error.message?.includes("429") || error.message?.includes("Quota exceeded") || error.message?.includes("RESOURCE_EXHAUSTED");
+      
+      if (isRateLimit) {
+        throw new Error("RATE_LIMIT_EXCEEDED: You've reached the Gemini API free tier limit (20 requests per day). Please wait a few minutes or try again later today.");
+      }
+
       if (isRetryable && attempts < maxAttempts) {
         console.warn(`Gemini API high demand (503). Retrying attempt ${attempts}...`);
         await new Promise(resolve => setTimeout(resolve, 2000 * attempts)); // Exponential backoff
@@ -251,6 +263,12 @@ export async function generateSalesScript(params: ScriptGenerationParams): Promi
     } catch (error: any) {
       attempts++;
       const isRetryable = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("UNAVAILABLE");
+      const isRateLimit = error.message?.includes("429") || error.message?.includes("Quota exceeded") || error.message?.includes("RESOURCE_EXHAUSTED");
+      
+      if (isRateLimit) {
+        throw new Error("RATE_LIMIT_EXCEEDED: You've reached the Gemini API free tier limit (20 requests per day). Please wait a few minutes or try again later today.");
+      }
+
       if (isRetryable && attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
         continue;

@@ -81,7 +81,11 @@ export default function ScriptGenerator() {
       localStorage.setItem('script_history', JSON.stringify(updatedHistory));
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to generate script. Please try again.");
+      let message = err.message || "Failed to generate script. Please try again.";
+      if (message.includes("RATE_LIMIT_EXCEEDED")) {
+        message = "You've reached the Gemini API free tier limit (20 requests per day). Please wait a few minutes or try again later today. This is a limit imposed by Google on their free AI model.";
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }

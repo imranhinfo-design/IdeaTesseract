@@ -1,10 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import OpenAI from "openai";
 
 let aiInstance: GoogleGenAI | null = null;
+let openaiInstance: OpenAI | null = null;
 
 export function getMaskedApiKey(): string {
   try {
-    let apiKey = (process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "").trim();
+    let apiKey = (process.env.OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY || process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "").trim();
     while ((apiKey.startsWith('"') && apiKey.endsWith('"')) || (apiKey.startsWith("'") && apiKey.endsWith("'"))) {
       apiKey = apiKey.substring(1, apiKey.length - 1).trim();
     }
@@ -16,27 +18,28 @@ export function getMaskedApiKey(): string {
   }
 }
 
-function getAI() {
-  if (!aiInstance) {
-    // Try both process.env (Vite define) and import.meta.env (Vite standard)
-    let apiKey = (process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "").trim();
-    
-    // Recursively remove quotes if they were accidentally included/nested in the env var
+function getOpenAI() {
+  if (!openaiInstance) {
+    let apiKey = (process.env.OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY || "").trim();
     while ((apiKey.startsWith('"') && apiKey.endsWith('"')) || (apiKey.startsWith("'") && apiKey.endsWith("'"))) {
       apiKey = apiKey.substring(1, apiKey.length - 1).trim();
     }
+    if (apiKey && apiKey !== "undefined" && apiKey !== "null") {
+      openaiInstance = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
+    }
+  }
+  return openaiInstance;
+}
 
+function getGemini() {
+  if (!aiInstance) {
+    let apiKey = (process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "").trim();
+    while ((apiKey.startsWith('"') && apiKey.endsWith('"')) || (apiKey.startsWith("'") && apiKey.endsWith("'"))) {
+      apiKey = apiKey.substring(1, apiKey.length - 1).trim();
+    }
     if (!apiKey || apiKey === "undefined" || apiKey === "null" || apiKey === "YOUR_API_KEY") {
-      throw new Error("GEMINI_API_KEY is not set or is a placeholder. Please provide a valid Google Gemini API key in your environment variables.");
+      throw new Error("API_KEY is not set. Please provide a valid OpenAI or Gemini API key in your environment variables.");
     }
-
-    // Basic validation: Google API keys usually start with 'AIza'
-    if (!apiKey.startsWith("AIza")) {
-      console.warn("The provided GEMINI_API_KEY does not start with 'AIza'. It might be invalid.");
-    } else {
-      console.log(`API Key detected (Safe Debug): ${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`);
-    }
-
     aiInstance = new GoogleGenAI({ apiKey });
   }
   return aiInstance;
@@ -82,35 +85,49 @@ export async function generateStepDeepDive(idea: string, country: string, stepTi
   
   Format the response in clean, professional Markdown.`;
   
-    const ai = getAI();
-    let attempts = 0;
-    const maxAttempts = 3;
-    
-    while (attempts < maxAttempts) {
-      try {
-        const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
-          contents: prompt,
-        });
-        return response.text || "No detailed information could be generated at this time.";
-      } catch (error: any) {
-        attempts++;
-        const isRetryable = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("UNAVAILABLE");
-        const isRateLimit = error.message?.includes("429") || error.message?.includes("Quota exceeded") || error.message?.includes("RESOURCE_EXHAUSTED");
-        
-        if (isRateLimit) {
-          throw new Error("RATE_LIMIT_EXCEEDED: You've reached the Gemini API free tier limit (20 requests per day). Please wait a few minutes or try again later today.");
-        }
-        
-        if (isRetryable && attempts < maxAttempts) {
-          console.warn(`Gemini API high demand (503). Retrying attempt ${attempts}...`);
-          await new Promise(resolve => setTimeout(resolve, 2000 * attempts)); // Exponential backoff
-          continue;
-        }
-        throw error;
-      }
+  const openai = getOpenAI();
+  if (openai) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+      });
+      return response.choices[0].message.content || "No detailed information could be generated at this time.";
+    } catch (error: any) {
+      if (error.status === 429) throw new Error("RATE_LIMIT_EXCEEDED: OpenAI API quota exceeded. Please check your billing details.");
+      throw error;
     }
-    return "No detailed information could be generated at this time.";
+  }
+
+  const ai = getGemini();
+  let attempts = 0;
+  const maxAttempts = 3;
+  
+  while (attempts < maxAttempts) {
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+      });
+      return response.text || "No detailed information could be generated at this time.";
+    } catch (error: any) {
+      attempts++;
+      const isRetryable = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("UNAVAILABLE");
+      const isRateLimit = error.message?.includes("429") || error.message?.includes("Quota exceeded") || error.message?.includes("RESOURCE_EXHAUSTED");
+      
+      if (isRateLimit) {
+        throw new Error("RATE_LIMIT_EXCEEDED: You've reached the Gemini API free tier limit (20 requests per day). Please wait a few minutes or try again later today.");
+      }
+      
+      if (isRetryable && attempts < maxAttempts) {
+        console.warn(`Gemini API high demand (503). Retrying attempt ${attempts}...`);
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+        continue;
+      }
+      throw error;
+    }
+  }
+  return "No detailed information could be generated at this time.";
 }
 
 export async function generateBusinessPlan(idea: string, country: string, currency: string, language: string = "English"): Promise<BusinessPlan> {
@@ -132,8 +149,23 @@ export async function generateBusinessPlan(idea: string, country: string, curren
   
   Cover every possible subject that can help the business idea succeed.
   Keep the response structured and professional.`;
+
+  const openai = getOpenAI();
+  if (openai) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        messages: [{ role: "user", content: prompt }],
+      });
+      return JSON.parse(response.choices[0].message.content || '{"suggestedNames": [], "summary": "", "brandingStartupAdvice": "", "steps": [], "problemsAndSolutions": [], "industryReferences": [], "governmentHelp": []}');
+    } catch (error: any) {
+      if (error.status === 429) throw new Error("RATE_LIMIT_EXCEEDED: OpenAI API quota exceeded. Please check your billing details.");
+      throw error;
+    }
+  }
   
-  const ai = getAI();
+  const ai = getGemini();
   let attempts = 0;
   const maxAttempts = 3;
   
@@ -246,7 +278,21 @@ export async function generateSalesScript(params: ScriptGenerationParams): Promi
 
   Format the entire response in professional Markdown.`;
 
-  const ai = getAI();
+  const openai = getOpenAI();
+  if (openai) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+      });
+      return response.choices[0].message.content || "Failed to generate script.";
+    } catch (error: any) {
+      if (error.status === 429) throw new Error("RATE_LIMIT_EXCEEDED: OpenAI API quota exceeded. Please check your billing details.");
+      throw error;
+    }
+  }
+
+  const ai = getGemini();
   let attempts = 0;
   const maxAttempts = 3;
 
@@ -278,3 +324,4 @@ export async function generateSalesScript(params: ScriptGenerationParams): Promi
   }
   return "Failed to generate script after multiple attempts.";
 }
+

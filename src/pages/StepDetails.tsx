@@ -57,11 +57,7 @@ export default function StepDetails() {
       setDeepDive(result);
     } catch (error: any) {
       console.error(error);
-      let message = "Failed to generate detailed information. Please try again.";
-      if (error.message?.includes("RATE_LIMIT_EXCEEDED")) {
-        message = "You've reached the Gemini API free tier limit. Please wait a few minutes or try again later today.";
-      }
-      setDeepDive(message);
+      setDeepDive("Failed to generate detailed information. Please try again.");
     } finally {
       setLoading(false);
     }

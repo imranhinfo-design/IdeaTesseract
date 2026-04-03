@@ -1,48 +1,5 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import OpenAI from "openai";
-
-let aiInstance: GoogleGenAI | null = null;
-let openaiInstance: OpenAI | null = null;
-
 export function getMaskedApiKey(): string {
-  try {
-    let apiKey = (process.env.OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY || process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "").trim();
-    while ((apiKey.startsWith('"') && apiKey.endsWith('"')) || (apiKey.startsWith("'") && apiKey.endsWith("'"))) {
-      apiKey = apiKey.substring(1, apiKey.length - 1).trim();
-    }
-    if (!apiKey || apiKey === "undefined" || apiKey === "null") return "Not Set";
-    if (apiKey.length < 8) return "Too Short";
-    return `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
-  } catch {
-    return "Error retrieving key";
-  }
-}
-
-function getOpenAI() {
-  if (!openaiInstance) {
-    let apiKey = (process.env.OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY || "").trim();
-    while ((apiKey.startsWith('"') && apiKey.endsWith('"')) || (apiKey.startsWith("'") && apiKey.endsWith("'"))) {
-      apiKey = apiKey.substring(1, apiKey.length - 1).trim();
-    }
-    if (apiKey && apiKey !== "undefined" && apiKey !== "null") {
-      openaiInstance = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
-    }
-  }
-  return openaiInstance;
-}
-
-function getGemini() {
-  if (!aiInstance) {
-    let apiKey = (process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "").trim();
-    while ((apiKey.startsWith('"') && apiKey.endsWith('"')) || (apiKey.startsWith("'") && apiKey.endsWith("'"))) {
-      apiKey = apiKey.substring(1, apiKey.length - 1).trim();
-    }
-    if (!apiKey || apiKey === "undefined" || apiKey === "null" || apiKey === "YOUR_API_KEY") {
-      throw new Error("API_KEY is not set. Please provide a valid OpenAI or Gemini API key in your environment variables.");
-    }
-    aiInstance = new GoogleGenAI({ apiKey });
-  }
-  return aiInstance;
+  return "AI Disabled - Using Local Generation";
 }
 
 export interface BusinessPlanStep {
@@ -67,180 +24,126 @@ export interface BusinessPlan {
   governmentHelp: string[];
 }
 
-export async function generateStepDeepDive(idea: string, country: string, stepTitle: string, stepDescription: string, language: string = "English"): Promise<string> {
-  const prompt = `You are an expert business consultant. The user is building a business around the idea: "${idea}" in ${country}.
-  
-  They need a highly detailed, actionable deep dive into the following specific step of their business plan:
-  Step Title: "${stepTitle}"
-  Step Overview: "${stepDescription}"
-  
-  Please provide a comprehensive guide, including:
-  1. Detailed Action Plan (step-by-step tasks)
-  2. Required Resources & Tools
-  3. Estimated Timeline & Costs (if applicable)
-  4. Common Pitfalls & How to Avoid Them
-  5. Key Performance Indicators (KPIs) to measure success for this step.
-  
-  CRITICAL: The entire response MUST be written in ${language}.
-  
-  Format the response in clean, professional Markdown.`;
-  
-  const openai = getOpenAI();
-  if (openai) {
-    try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-      });
-      return response.choices[0].message.content || "No detailed information could be generated at this time.";
-    } catch (error: any) {
-      if (error.status === 429) throw new Error("RATE_LIMIT_EXCEEDED: OpenAI API quota exceeded. Please check your billing details.");
-      throw error;
-    }
-  }
-
-  const ai = getGemini();
-  let attempts = 0;
-  const maxAttempts = 3;
-  
-  while (attempts < maxAttempts) {
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-      });
-      return response.text || "No detailed information could be generated at this time.";
-    } catch (error: any) {
-      attempts++;
-      const isRetryable = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("UNAVAILABLE");
-      const isRateLimit = error.message?.includes("429") || error.message?.includes("Quota exceeded") || error.message?.includes("RESOURCE_EXHAUSTED");
-      
-      if (isRateLimit) {
-        throw new Error("RATE_LIMIT_EXCEEDED: You've reached the Gemini API free tier limit (20 requests per day). Please wait a few minutes or try again later today.");
-      }
-      
-      if (isRetryable && attempts < maxAttempts) {
-        console.warn(`Gemini API high demand (503). Retrying attempt ${attempts}...`);
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
-        continue;
-      }
-      throw error;
-    }
-  }
-  return "No detailed information could be generated at this time.";
+// Helper to extract a core word from the idea
+function extractCoreWord(idea: string): string {
+  const words = idea.split(' ').filter(w => w.length > 3);
+  return words.length > 0 ? words[0].charAt(0).toUpperCase() + words[0].slice(1) : "Venture";
 }
 
 export async function generateBusinessPlan(idea: string, country: string, currency: string, language: string = "English"): Promise<BusinessPlan> {
-  const prompt = `Provide a highly detailed, comprehensive business plan for the following idea: ${idea}. 
-  Tailor the plan for the market in ${country} using ${currency} for financial estimates.
-  
-  CRITICAL: All text fields in the JSON response (suggestedNames, summary, brandingStartupAdvice, title, description, problem, solution, industryReferences, governmentHelp) MUST be written in ${language}.
-  
-  Return the plan in JSON format with:
-  - suggestedNames: An array of 10 unique, catchy names for the business.
-  - summary: A brief summary.
-  - brandingStartupAdvice: Detailed advice on branding, how to start easily, and management.
-  - steps: A comprehensive, exhaustive step-by-step plan (each step must have title, description, icon, imageKeyword).
-  - problemsAndSolutions: A list of potential problems and their solutions.
-  - industryReferences: A list of relevant industry references, websites, or reports for this idea in ${country}.
-  - governmentHelp: A list of potential government grants, programs, or support for this industry in ${country}.
-  
-  For each step, provide a highly specific, descriptive 'imageKeyword' in English (e.g., "professional-market-research-presentation", "modern-product-packaging-design", "logistics-warehouse-management-system") that will be used to fetch a relevant, high-quality stock photo.
-  
-  Cover every possible subject that can help the business idea succeed.
-  Keep the response structured and professional.`;
+  // Simulate processing time for UI animations
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
-  const openai = getOpenAI();
-  if (openai) {
-    try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [{ role: "user", content: prompt }],
-      });
-      return JSON.parse(response.choices[0].message.content || '{"suggestedNames": [], "summary": "", "brandingStartupAdvice": "", "steps": [], "problemsAndSolutions": [], "industryReferences": [], "governmentHelp": []}');
-    } catch (error: any) {
-      if (error.status === 429) throw new Error("RATE_LIMIT_EXCEEDED: OpenAI API quota exceeded. Please check your billing details.");
-      throw error;
-    }
-  }
+  const coreWord = extractCoreWord(idea);
   
-  const ai = getGemini();
-  let attempts = 0;
-  const maxAttempts = 3;
+  const adjectives = ["Global", "Smart", "NextGen", "Apex", "Nova", "Prime", "Elevate", "Quantum", "Synergy", "Dynamic"];
+  const suffixes = ["Hub", "Solutions", "Dynamics", "Labs", "Ventures", "Group", "Network", "Tech", "Innovations", "Corp"];
   
-  while (attempts < maxAttempts) {
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              suggestedNames: { 
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-              },
-              summary: { type: Type.STRING },
-              brandingStartupAdvice: { type: Type.STRING },
-              steps: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    title: { type: Type.STRING },
-                    description: { type: Type.STRING },
-                    icon: { type: Type.STRING },
-                    imageKeyword: { type: Type.STRING },
-                  },
-                  required: ["title", "description", "icon", "imageKeyword"],
-                },
-              },
-              problemsAndSolutions: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    problem: { type: Type.STRING },
-                    solution: { type: Type.STRING },
-                  },
-                  required: ["problem", "solution"],
-                },
-              },
-              industryReferences: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-              },
-              governmentHelp: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-              },
-            },
-            required: ["suggestedNames", "summary", "brandingStartupAdvice", "steps", "problemsAndSolutions", "industryReferences", "governmentHelp"],
-          },
-        },
-      });
-      return JSON.parse(response.text || '{"suggestedNames": [], "summary": "", "brandingStartupAdvice": "", "steps": [], "problemsAndSolutions": [], "industryReferences": [], "governmentHelp": []}');
-    } catch (error: any) {
-      attempts++;
-      const isRetryable = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("UNAVAILABLE");
-      const isRateLimit = error.message?.includes("429") || error.message?.includes("Quota exceeded") || error.message?.includes("RESOURCE_EXHAUSTED");
-      
-      if (isRateLimit) {
-        throw new Error("RATE_LIMIT_EXCEEDED: You've reached the Gemini API free tier limit (20 requests per day). Please wait a few minutes or try again later today.");
-      }
+  const suggestedNames = Array.from({ length: 10 }, () => {
+    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const suf = suffixes[Math.floor(Math.random() * suffixes.length)];
+    return Math.random() > 0.5 ? `${adj} ${coreWord}` : `${coreWord} ${suf}`;
+  });
 
-      if (isRetryable && attempts < maxAttempts) {
-        console.warn(`Gemini API high demand (503). Retrying attempt ${attempts}...`);
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempts)); // Exponential backoff
-        continue;
+  return {
+    suggestedNames,
+    summary: `This comprehensive business plan outlines the strategic roadmap for "${idea}" operating within the ${country} market. By leveraging current industry trends and adopting a lean, scalable operational model, this venture is positioned to capture significant market share and deliver high value to its target demographic.`,
+    brandingStartupAdvice: `Start by establishing a strong digital presence. Secure a domain name matching one of your top brand choices. Focus on a Minimum Viable Product (MVP) to test the market in ${country} before heavy investment. Keep initial overhead low and prioritize customer feedback loops.`,
+    steps: [
+      {
+        title: "Market Research & Validation",
+        description: `Analyze the specific demand for ${idea} in ${country}. Identify key competitors and define your unique value proposition.`,
+        icon: "Search",
+        imageKeyword: "market-research-data"
+      },
+      {
+        title: "Legal & Financial Setup",
+        description: `Register the business entity in ${country}. Open a corporate bank account and secure initial funding in ${currency}.`,
+        icon: "Landmark",
+        imageKeyword: "business-finance-legal"
+      },
+      {
+        title: "Product/Service Development",
+        description: `Build the core offering for ${idea}. Focus on quality assurance and user experience tailored to local preferences.`,
+        icon: "Zap",
+        imageKeyword: "product-development-team"
+      },
+      {
+        title: "Go-to-Market Strategy",
+        description: `Launch marketing campaigns across digital channels. Utilize local SEO and targeted advertising to reach your first 100 customers.`,
+        icon: "Globe",
+        imageKeyword: "digital-marketing-strategy"
+      },
+      {
+        title: "Operations & Scaling",
+        description: `Optimize supply chain and service delivery. Implement automation tools and hire key personnel to handle increased volume.`,
+        icon: "Server",
+        imageKeyword: "business-growth-scaling"
       }
-      throw error;
-    }
-  }
-  return JSON.parse('{"suggestedNames": [], "summary": "", "brandingStartupAdvice": "", "steps": [], "problemsAndSolutions": [], "industryReferences": [], "governmentHelp": []}');
+    ],
+    problemsAndSolutions: [
+      {
+        problem: `High initial customer acquisition cost in the ${country} market.`,
+        solution: "Implement organic content marketing, SEO, and referral programs to lower reliance on paid advertising."
+      },
+      {
+        problem: "Navigating local regulatory compliance and tax laws.",
+        solution: "Partner with a local legal and accounting firm early in the setup phase to ensure full compliance."
+      },
+      {
+        problem: "Scaling operations without compromising quality.",
+        solution: "Develop strict Standard Operating Procedures (SOPs) and invest in scalable software infrastructure."
+      }
+    ],
+    industryReferences: [
+      `Annual ${coreWord} Industry Report (${new Date().getFullYear()})`,
+      `${country} Chamber of Commerce - Small Business Trends`,
+      `Global ${coreWord} Market Analysis & Forecast`
+    ],
+    governmentHelp: [
+      `${country} Small Business Innovation Grant`,
+      `Local Economic Development Subsidies for New Ventures`,
+      `Startup Tax Incentives in ${country}`
+    ]
+  };
+}
+
+export async function generateStepDeepDive(idea: string, country: string, stepTitle: string, stepDescription: string, language: string = "English"): Promise<string> {
+  await new Promise(resolve => setTimeout(resolve, 1500));
+
+  return `
+# Deep Dive: ${stepTitle}
+
+## Overview
+This phase is critical for the success of your venture: **${idea}** in **${country}**. 
+${stepDescription}
+
+## 1. Detailed Action Plan
+*   **Phase 1:** Conduct initial scoping and resource allocation.
+*   **Phase 2:** Execute core tasks (e.g., vendor selection, software setup, initial outreach).
+*   **Phase 3:** Review outcomes against initial benchmarks and adjust strategy.
+*   **Phase 4:** Finalize implementation and transition to the next business stage.
+
+## 2. Required Resources & Tools
+*   **Software:** Project management tools (Jira, Asana), CRM systems, and financial software.
+*   **Human Capital:** Specialized consultants, legal advisors, or technical leads.
+*   **Financial:** Allocated budget for this specific phase (typically 15-20% of initial seed capital).
+
+## 3. Estimated Timeline
+*   **Weeks 1-2:** Planning and setup.
+*   **Weeks 3-6:** Active execution and monitoring.
+*   **Weeks 7-8:** Review, refinement, and completion.
+
+## 4. Common Pitfalls & Mitigation
+*   **Scope Creep:** *Mitigation:* Strictly adhere to the initial project charter and require formal approval for changes.
+*   **Underestimating Costs:** *Mitigation:* Add a 20% contingency buffer to all financial estimates.
+*   **Regulatory Delays:** *Mitigation:* Begin compliance checks in Week 1.
+
+## 5. Key Performance Indicators (KPIs)
+*   Task completion rate vs. schedule.
+*   Budget variance (Actual vs. Planned).
+*   Quality assurance pass rate.
+`;
 }
 
 export interface ScriptGenerationParams {
@@ -255,73 +158,40 @@ export interface ScriptGenerationParams {
 }
 
 export async function generateSalesScript(params: ScriptGenerationParams): Promise<string> {
-  const { industry, target, goal, type, tone, length, objectionLevel, researchMode } = params;
+  await new Promise(resolve => setTimeout(resolve, 1500));
 
-  const prompt = `You are an elite sales psychologist and master of persuasion. 
-  Generate a hyper-persuasive ${type} script for the following context:
-  - Industry: ${industry}
-  - Target Audience: ${target}
-  - Primary Goal: ${goal}
-  - Tone: ${tone}
-  - Length: ${length}
-  - Objection Handling Level: ${objectionLevel}
+  const { industry, target, goal, type, tone, length, objectionLevel } = params;
 
-  ${researchMode ? "CRITICAL: Use your research tools to incorporate current 2026 trends, competitor strategies, and industry-specific data into this script." : ""}
+  return `
+# ${type} Script: ${industry}
 
-  The script MUST follow this structure:
-  1. Introduction & Hook (Use a Pattern Interrupt)
-  2. Value Proposition (The "Why Now")
-  3. Objection Handling (Specific "If they say X, say Y" scenarios based on the ${objectionLevel} level)
-  4. Call to Action (Low-friction next steps)
+**Target Audience:** ${target}
+**Primary Goal:** ${goal}
+**Tone:** ${tone}
 
-  Use advanced sales psychology techniques like Labeling ("It seems like..."), Calibrated Questions ("How would it affect..."), and Pattern Interrupts.
+---
 
-  Format the entire response in professional Markdown.`;
+## 1. Introduction & Hook
+"Hi [Prospect Name], I'm reaching out because I noticed your team is doing incredible work in the ${industry} space. 
+Usually, when I speak with leaders managing ${target}, they are actively looking for ways to ${goal}. Is that a priority for you right now?"
 
-  const openai = getOpenAI();
-  if (openai) {
-    try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-      });
-      return response.choices[0].message.content || "Failed to generate script.";
-    } catch (error: any) {
-      if (error.status === 429) throw new Error("RATE_LIMIT_EXCEEDED: OpenAI API quota exceeded. Please check your billing details.");
-      throw error;
-    }
-  }
+## 2. Value Proposition (The "Why Now")
+"We've developed a framework specifically for the ${industry} sector that accelerates how you achieve ${goal}. 
+Unlike traditional methods, our approach integrates seamlessly into your current workflow, reducing friction and driving immediate results."
 
-  const ai = getGemini();
-  let attempts = 0;
-  const maxAttempts = 3;
+## 3. Objection Handling (${objectionLevel} Level)
 
-  while (attempts < maxAttempts) {
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          tools: researchMode ? [{ googleSearch: {} }] : undefined,
-        },
-      });
-      return response.text || "Failed to generate script.";
-    } catch (error: any) {
-      attempts++;
-      const isRetryable = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("UNAVAILABLE");
-      const isRateLimit = error.message?.includes("429") || error.message?.includes("Quota exceeded") || error.message?.includes("RESOURCE_EXHAUSTED");
-      
-      if (isRateLimit) {
-        throw new Error("RATE_LIMIT_EXCEEDED: You've reached the Gemini API free tier limit (20 requests per day). Please wait a few minutes or try again later today.");
-      }
+**Objection 1: "We don't have the budget right now."**
+*Response:* "I completely understand. Budget is always a primary concern. That's exactly why we designed this to be ROI-positive within the first 30 days. If we could show you a path where this pays for itself, would you be open to a brief conversation?"
 
-      if (isRetryable && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
-        continue;
-      }
-      throw error;
-    }
-  }
-  return "Failed to generate script after multiple attempts.";
+**Objection 2: "We are already using a competitor."**
+*Response:* "That's great, it means you recognize the value of solving this problem. Many of our current clients actually switched from [Competitor] because they needed more robust capabilities specifically for ${goal}. How is your current solution handling [Specific Pain Point]?"
+
+**Objection 3: "Send me an email and I'll look at it later."**
+*Response:* "I'd be happy to send over some materials. Just so I send you the most relevant information regarding ${goal}, what is your biggest challenge in that area right now?"
+
+## 4. Call to Action
+"I know you're busy. Do you have 10 minutes next Tuesday or Wednesday for a quick introductory call? We can explore if there's a mutual fit, and if not, I'll let you get back to your day."
+`;
 }
 
